@@ -5,7 +5,13 @@
 package it.polito.tdp.yelp;
 
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
+
+import it.polito.tdp.yelp.model.Business;
 import it.polito.tdp.yelp.model.Model;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -37,31 +43,79 @@ public class FXMLController {
     private TextField txtX2; // Value injected by FXMLLoader
 
     @FXML // fx:id="cmbCitta"
-    private ComboBox<?> cmbCitta; // Value injected by FXMLLoader
+    private ComboBox<String> cmbCitta; // Value injected by FXMLLoader
 
     @FXML // fx:id="cmbB1"
-    private ComboBox<?> cmbB1; // Value injected by FXMLLoader
+    private ComboBox<String> cmbB1; // Value injected by FXMLLoader
 
     @FXML // fx:id="cmbB2"
-    private ComboBox<?> cmbB2; // Value injected by FXMLLoader
+    private ComboBox<String> cmbB2; // Value injected by FXMLLoader
 
     @FXML // fx:id="txtResult"
     private TextArea txtResult; // Value injected by FXMLLoader
     
     @FXML
     void doCreaGrafo(ActionEvent event) {
+    	String citta = this.cmbCitta.getValue();
+    	if(citta == null) {
+    		this.txtResult.setText("Inserire una citta nella boxCitta!");
+    		return;
+    	}
+    	String r = model.creaGrafo(citta);
+    	this.txtResult.setText(r);
+    	for(Business b : model.getAllBusinesses()) {
+    		this.cmbB1.getItems().add(b.getBusinessName());
     	
+    	}
     }
 
     @FXML
     void doCalcolaLocaleDistante(ActionEvent event) {
-
-    	
+    	String b1NAME= this.cmbB1.getValue();
+    	if(b1NAME == null) {
+    		this.txtResult.setText("Inserire un Business nella boxB1!");
+    		return;
+    	}
+    	Business result = model.calcolaLocaleDistante(b1NAME);
+    	for(Business b : model.getAllBusinesses()) {
+    		this.cmbB2.getItems().add(b.getBusinessName());
+    		this.cmbB2.getItems().remove(b1NAME);
+    	}
+    	this.txtResult.setText("Il locale piu distante da "+b1NAME+" è "+result.getBusinessName()+" distanza = "+model.getDistanzaMAX());
     }
 
     @FXML
-    void doCalcolaPercorso(ActionEvent event) {
-
+    void doCalcolaPercorso(ActionEvent event) {//c'è un problema: devo fare getter della mappa nomiBusiness per inserire
+    	//i valori di b1 e b2 nel metodo ricorsivo
+    	String xs = this.txtX2.getText();
+    	Double x;
+    	String b1NAME = this.cmbB1.getValue();
+    	String b2NAME = this.cmbB2.getValue();
+    	if(b1NAME == null) {
+    		this.txtResult.setText("Inserire un Business nella boxB1!");
+    		return;
+    	}
+    	if(b2NAME == null) {
+    		this.txtResult.setText("Inserire un Business nella boxB2!");
+    		return;
+    	}
+    	try {
+    		x = Double.parseDouble(xs);
+    	}catch(NumberFormatException e) {
+    		this.txtResult.setText("Inserire un numero nel campo x!");
+    		return;
+    	}
+    	Map<String, Business>mappaNomiBusiness = new HashMap<>(model.getBusinessNameMap());
+    	Business b1 = mappaNomiBusiness.get(b1NAME);
+    	Business b2 = mappaNomiBusiness.get(b2NAME);
+    	model.calcolaPercorso(x, b1, b2);
+    	List<Business>percorso = new ArrayList<>(model.getPercorsoMigliore());
+    	Integer n = model.getNumMaxLocali();
+    	String result = "Il percorso migliore tra "+b1.getBusinessName()+" e "+b2.getBusinessName()+" contiene "+n+" locali: \n";
+    	for(Business y : percorso) {
+    		result += y.getBusinessName();
+    	}
+    	this.txtResult.setText(result);
     }
 
 
@@ -80,5 +134,8 @@ public class FXMLController {
     
     public void setModel(Model model) {
     	this.model = model;
+    	for(String c : model.getAllCities()) {
+    		this.cmbCitta.getItems().add(c);
+    	}
     }
 }
